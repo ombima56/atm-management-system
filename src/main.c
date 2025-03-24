@@ -2,7 +2,7 @@
 
 void mainMenu(struct User u)
 {
-    int option;
+    int options;
     system("clear");
     printf("\n\n\t\t======= ATM =======\n\n");
     printf("\n\t\t-->> Feel free to choose one of the options below <<--\n");
@@ -14,36 +14,30 @@ void mainMenu(struct User u)
     printf("\n\t\t[6]- Remove existing account\n");
     printf("\n\t\t[7]- Transfer ownership\n");
     printf("\n\t\t[8]- Exit\n");
-    scanf("%d", &option);
+    scanf("%d", &options);
 
-    switch (option)
-    {
+    switch (options) {
     case 1:
         createNewAcc(u);
         break;
-    case 2:
-        // student TODO : add your **Update account information** function
-        // here
-        break;
+    case 2: 
+        // updateAccountInfo(u);
+        // break;
     case 3:
-        // student TODO : add your **Check the details of existing accounts** function
-        // here
-        break;
+        // checkoutAccountDetails(u);
+        // break;
     case 4:
-        checkAllAccounts(u);
-        break;
+        // checkAllAccounts(u);
+        // break;
     case 5:
-        // student TODO : add your **Make transaction** function
-        // here
-        break;
+        // makeTransaction(u);
+        // break;
     case 6:
-        // student TODO : add your **Remove existing account** function
-        // here
-        break;
-    case 7:
-        // student TODO : add your **Transfer owner** function
-        // here
-        break;
+        // removeExistingAccount(u);
+        // break;
+    case 7: 
+        // transferOwnership(u);
+        // break;
     case 8:
         exit(1);
         break;
@@ -81,9 +75,7 @@ void initMenu(struct User *u)
             r = 1;
             break;
         case 2:
-            // student TODO : add your **Registration** function
-            // here
-            r = 1;
+            registerMenu(u->name, u->password);
             break;
         case 3:
             exit(1);
