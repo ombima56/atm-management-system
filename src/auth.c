@@ -12,6 +12,9 @@ struct User {
     char password[50];
 };
 
+int getNextID();
+void mainMenu(struct User u);
+
 void registerMenu(char a[50], char pass[50]) {
     struct User u;
     FILE *fp = fopen(USERS, "a+");
@@ -21,9 +24,10 @@ void registerMenu(char a[50], char pass[50]) {
     }
 
     u.id = getNextID();
-
     system("clear");
     printf("\n\n\t\t======= Register =======\n");
+
+    while (getchar() != '\n'); // Clear input buffer
 
     do {
         printf("\nEnter username: ");
@@ -50,13 +54,13 @@ void registerMenu(char a[50], char pass[50]) {
         fgets(pass, 50, stdin);
         pass[strcspn(pass, "\n")] = 0;
 
-        if (strlen(pass) < 2) {
-            printf("\nPassword must be at least 2 characters long.\n");
+        if (strlen(pass) < 4 || strlen(pass) > 20) {
+            printf("\nPassword must be between 4 and 20 characters long.\n");
         }
         else if (strchr(pass, ' ') != NULL) {
             printf("Password must not contain spaces.\n");
         }
-    } while (strlen(pass) < 2 || strchr(pass, ' ') != NULL);
+    } while (strlen(pass) < 4 || strlen(pass) > 20 || strchr(pass, ' ') != NULL);
 
     strcpy(u.name, a);
     strcpy(u.password, pass);
