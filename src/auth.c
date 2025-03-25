@@ -27,7 +27,7 @@ void registerMenu(char a[50], char pass[50]) {
     system("clear");
     printf("\n\n\t\t======= Register =======\n");
 
-    while (getchar() != '\n'); // Clear input buffer
+    while (getchar() != '\n');
 
     do {
         printf("\nEnter username: ");
@@ -41,26 +41,38 @@ void registerMenu(char a[50], char pass[50]) {
         }
     } while (strlen(a) == 0 || strchr(a, ' ') != NULL);
 
-    while (fscanf(fp, "%d %49s %49s", &u.id, u.name, u.password) == 3) {
-        if (strcmp(u.name, a) == 0) {
+    rewind(fp);
+    struct User existingUser;
+    int username_exists = 0;
+    while (fscanf(fp, "%d %49s %49s", &existingUser.id, existingUser.name, existingUser.password) == 3) {
+        if (strcmp(existingUser.name, a) == 0) {
             printf("Username already exists.\n");
             fclose(fp);
             return;
         }
     }
 
-    do {
+    while (1) {
         printf("\nEnter password: ");
-        fgets(pass, 50, stdin);
+        if (fgets(pass, 50, stdin) == NULL) {
+            printf("Input error occurred.\n");
+            fclose(fp);
+            return;
+        }
         pass[strcspn(pass, "\n")] = 0;
 
-        if (strlen(pass) < 4 || strlen(pass) > 20) {
+        if ((strlen(pass) < 4) || (strlen(pass) > 20)) {
             printf("\nPassword must be between 4 and 20 characters long.\n");
+            continue;
         }
-        else if (strchr(pass, ' ') != NULL) {
+
+        if (strchr(pass, ' ') != NULL) {
             printf("Password must not contain spaces.\n");
+            continue;
         }
-    } while (strlen(pass) < 4 || strlen(pass) > 20 || strchr(pass, ' ') != NULL);
+
+        break;
+    }
 
     strcpy(u.name, a);
     strcpy(u.password, pass);
@@ -73,7 +85,7 @@ void registerMenu(char a[50], char pass[50]) {
 
     printf("\n\nEnter 1 to go to the main menu and 0 to exit!\n");
     scanf("%d", &options);
-    while (getchar() != '\n'); // Clear input buffer
+    while (getchar() != '\n');
 
     if (options == 1) {
         mainMenu(u);
