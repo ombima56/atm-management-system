@@ -24,8 +24,8 @@ void mainMenu(struct User u)
         // updateAccountInfo(u);
         // break;
     case 3:
-        // checkoutAccountDetails(u);
-        // break;
+        checkAccountDetails(u);
+        break;
     case 4:
         // checkAllAccounts(u);
         // break;
