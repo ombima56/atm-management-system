@@ -21,8 +21,8 @@ void mainMenu(struct User u)
         createNewAcc(u);
         break;
     case 2: 
-        // updateAccountInfo(u);
-        // break;
+        updateAccountInfo(u);
+        break;
     case 3:
         checkAccountDetails(u);
         break;
