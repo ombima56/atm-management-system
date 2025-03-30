@@ -27,8 +27,8 @@ void mainMenu(struct User u)
         checkAccountDetails(u);
         break;
     case 4:
-        // checkAllAccounts(u);
-        // break;
+        checkAllAccounts(u);
+        break;
     case 5:
         // makeTransaction(u);
         // break;
