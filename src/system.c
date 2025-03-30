@@ -1,4 +1,5 @@
 #include "header.h"
+#include <ctype.h>
 
 const char *RECORDS = "./data/records.txt";
 
@@ -162,4 +163,207 @@ void checkAllAccounts(struct User u)
     }
     fclose(pf);
     success(u);
+}
+
+void checkAccountDetails(struct User u)
+{
+    struct Record r;
+    FILE *fp = fopen(RECORDS, "r");
+    int accNum, found = 0;
+    float interest;
+    float monthlyInterest;
+
+    if (!fp)
+    {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    printf("\nEnter account number to check: ");
+    scanf("%d", &accNum);
+
+    while (fscanf(fp, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                  &r.id, &r.userId, r.name, &r.accountNbr,
+                  &r.deposit.month, &r.deposit.day, &r.deposit.year,
+                  r.country, &r.phone, &r.amount, r.accountType) != EOF)
+    {
+        if (r.accountNbr == accNum && strcmp(r.name, u.name) == 0)
+        {
+            found = 1;
+
+            printf("\n===== Account Details =====\n");
+            printf("Account Number: %d\n", r.accountNbr);
+            printf("Name: %s\n", r.name);
+            printf("Country: %s\n", r.country);
+            printf("Phone: %d\n", r.phone);
+            printf("Balance: $%.2lf\n", r.amount);
+            printf("Account Type: %s\n", r.accountType);
+            printf("Date Opened: %02d/%02d/%d\n", r.deposit.month, r.deposit.day, r.deposit.year);
+
+            if (strcmp(r.accountType, "saving") == 0)
+            {
+                interest = 7 * r.amount / 100;
+                monthlyInterest = interest / 12;
+                printf("\n✔ You will receive %.2f as interest on day %d of every month.\n", monthlyInterest, r.deposit.day);
+            }
+            else if (strcmp(r.accountType, "fixed01") == 0)
+            {
+                interest = 4 * r.amount / 100;
+                printf("\n✔ You will receive %.2f as interest on day %d/%d/%d.\n", interest, r.deposit.day, r.deposit.month, r.deposit.year+1);
+            }
+            else if (strcmp(r.accountType, "fixed02") == 0)
+            {
+                interest = (5 * r.amount / 100)*2;
+                printf("\n✔ You will receive %.2f as interest on day %d/%d/%d.\n", interest, r.deposit.day, r.deposit.month, r.deposit.year+2);
+            }
+            else if (strcmp(r.accountType, "fixed03") == 0)
+            {
+                interest = (8 * r.amount / 100)*3;
+                printf("\n✔ You will receive %.2f as interest on day %d/%d/%d.\n", interest, r.deposit.day, r.deposit.month, r.deposit.year+3);
+            }
+            else if (strcmp(r.accountType, "current") == 0)
+            {
+                printf("\n✖ No interest is applied as this is a current account.\n");
+            }
+
+            success(u);
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        printf("\n✖ Account not found!\n");
+        success(u);
+    }
+
+    fclose(fp);
+};
+
+// Function to check if input is a valid number
+int isValidNumber(const char *str) {
+    int dotCount = 0;
+    if (*str == '\0') return 0;
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == '.') {
+            dotCount++;
+            if (dotCount > 1) return 0;
+        } else if (!isdigit(str[i])) {
+            return 0; 
+        }
+    }
+    return 1;
+}
+
+void makeTransaction(struct User u) {
+    struct Record r;
+    int accNum, found = 0;
+    double amount;
+    char choice;
+    char line[250];
+    char amountStr[50];
+
+    FILE *fp = fopen(RECORDS, "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if (!fp || !temp) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    printf("\nEnter account number to make a transaction: ");
+    scanf("%d", &accNum);
+    getchar();
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (line[0] == '\n') continue;
+
+        if (sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                   &r.id, &r.userId, r.name, &r.accountNbr,
+                   &r.deposit.month, &r.deposit.day, &r.deposit.year,
+                   r.country, &r.phone, &r.amount, r.accountType) != 11) {
+            printf("Error reading line, skipping...\n");
+            continue;
+        }
+
+        if (r.accountNbr == accNum && strcmp(u.name, r.name) == 0 ){
+            
+            found = 1;
+            printf("\nSelect type of Transaction:");
+            printf("\n1: Deposit");
+            printf("\n2: Withdraw");
+            printf("\n3: Check Balance");
+            printf("\nEnter choice: ");
+            scanf(" %c", &choice);
+            getchar();
+
+            if (choice == '1' || choice == '2') {
+                if (strcmp(r.accountType, "fixed01") != 0 && strcmp(r.accountType, "fixed02") != 0 && strcmp(r.accountType, "fixed03") != 0) {
+                
+                do {
+                    printf("\nEnter amount: ");
+                    fgets(amountStr, sizeof(amountStr), stdin);
+                    amountStr[strcspn(amountStr, "\n")] = 0;
+
+                    if (!isValidNumber(amountStr)) {
+                        printf("\n✖ Invalid input! Please enter a valid number.\n");
+                        continue;
+                    }
+
+                    amount = strtod(amountStr, NULL);
+
+                    if (amount < 0 || amount > 1000000) {
+                        printf("\n✖ Invalid amount! Please enter a positive value and value not exceeding 1000000.\n");
+                    }
+
+                } while (amount < 0 || amount > 1000000 || !isValidNumber(amountStr));
+
+                if (choice == '1') {
+                    r.amount += amount;
+                    printf("\n✔ Deposit successful! New balance: %.2lf\n", r.amount);
+                } else if (choice == '2') {
+                    if (amount > r.amount) {
+                        printf("\n✖ Insufficient balance! Your account balance is %.2lf\n", r.amount);
+                    } else {
+                        r.amount -= amount;
+                        printf("\n✔ Withdrawal successful! New balance: %.2lf\n", r.amount);
+                    }
+                }
+            } else {
+            printf("\n✖ You can not transact in a fixed account. Try another account\n\n");
+            
+            success(u);
+
+        }
+            } else if (choice == '3') {
+                printf("\n✔ Current balance: %.2lf\n", r.amount);
+            } else {
+                printf("\n✖ Invalid choice!\n");
+            }
+        }
+
+        fprintf(temp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+                r.id, r.userId, r.name, r.accountNbr,
+                r.deposit.month, r.deposit.day, r.deposit.year,
+                r.country, r.phone, r.amount, r.accountType);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (found) {
+        if (remove(RECORDS) != 0) {
+            printf("Error deleting original file!\n");
+            return;
+        }
+        if (rename("temp.txt", RECORDS) != 0) {
+            return;
+        }
+        success(u);
+    } else {
+        printf("\n✖ Account not found!\n\n");
+        remove("temp.txt");
+        success(u);
+    }
 }

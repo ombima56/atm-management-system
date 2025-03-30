@@ -24,14 +24,14 @@ void mainMenu(struct User u)
         // updateAccountInfo(u);
         // break;
     case 3:
-        // checkoutAccountDetails(u);
-        // break;
+        checkAccountDetails(u);
+        break;
     case 4:
-        // checkAllAccounts(u);
-        // break;
+        checkAllAccounts(u);
+        break;
     case 5:
-        // makeTransaction(u);
-        // break;
+        makeTransaction(u);
+        break;
     case 6:
         // removeExistingAccount(u);
         // break;
