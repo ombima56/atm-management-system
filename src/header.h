@@ -46,6 +46,7 @@ void makeTransaction(struct User u);
 void removeExistingAccount(struct User u);
 void updateAccountInfo(struct User u);
 void transferOwnership(struct User u);
+void success(struct User u);
 
 extern const char *USERS;
 #endif
