@@ -136,6 +136,102 @@ noAccount:
     success(u);
 }
 
+void updateAccountInfo(struct User u)
+{
+    struct Record r;
+    FILE *fp = fopen(RECORDS, "r");
+    FILE *temp = fopen("temp.txt", "w");
+    char lines[250];
+    int accNum, found = 0;
+    char newCountry[50];
+    int newPhone, changeCountry = 0, changePhone = 0;
+
+    if (!fp || !temp)
+    {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    printf("\nEnter your account number to update: ");
+    scanf("%d", &accNum);
+    getchar();
+
+    while (fgets(lines, sizeof(lines), fp))
+    {
+        if (lines[0] == '\n')
+        {
+            continue;
+        }
+
+        if (sscanf(lines, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                   &r.id, &r.userId, r.name, &r.accountNbr,
+                   &r.deposit.month, &r.deposit.day, &r.deposit.year,
+                   r.country, &r.phone, &r.amount, r.accountType) != 11)
+        {
+            printf("Error reading line, skipping...\n");
+            continue;
+        }
+
+        if (r.accountNbr == accNum && strcmp(r.name, u.name) == 0)
+        {
+            found = 1;
+
+            printf("\nEnter new country (or press Enter to keep [%s]): ", r.country);
+            fgets(newCountry, sizeof(newCountry), stdin);
+            if (newCountry[0] != '\n')
+            {
+                newCountry[strcspn(newCountry, "\n")] = '\0';
+                strcpy(r.country, newCountry);
+                changeCountry = 1;
+            }
+
+            printf("\nEnter new phone number (or press 0 to keep [%d]): ", r.phone);
+            if (scanf("%d", &newPhone) == 1 && newPhone > 0)
+            {
+                r.phone = newPhone;
+                changePhone = 1;
+            }
+            getchar();
+
+            if (changeCountry || changePhone)
+            {
+                printf("\n✔ Account updated successfully!\n");
+            }
+            else
+            {
+                printf("\n✔ No changes made.\n");
+            }
+        }
+
+        fprintf(temp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+                r.id, r.userId, r.name, r.accountNbr,
+                r.deposit.month, r.deposit.day, r.deposit.year,
+                r.country, r.phone, r.amount, r.accountType);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (found)
+    {
+        if (remove(RECORDS) != 0)
+        {
+            printf("Error deleting original file!\n");
+            return;
+        }
+        if (rename("temp.txt", RECORDS) != 0)
+        {
+            return;
+        }
+        success(u);
+    }
+    else
+    {
+        printf("\n✖ Account not found!\n");
+        remove("temp.txt");
+    }
+}
+
 void checkAllAccounts(struct User u)
 {
     char userName[100];
