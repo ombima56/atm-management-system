@@ -33,8 +33,8 @@ void mainMenu(struct User u)
         makeTransaction(u);
         break;
     case 6:
-        // removeExistingAccount(u);
-        // break;
+        removeExistingAccount(u);
+        break;
     case 7: 
         // transferOwnership(u);
         // break;

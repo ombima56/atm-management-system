@@ -367,3 +367,66 @@ void makeTransaction(struct User u) {
         success(u);
     }
 }
+
+void removeExistingAccount(struct User u) {
+
+    struct Record r;
+    int accountNbr, found = 0;
+    char line[256];
+
+    FILE *fp = fopen(RECORDS, "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if (!fp || !temp)
+    {
+        perror("Error opening file!");
+        return;
+    }
+
+    printf("\nEnter the account number to remove: ");
+    scanf("%d", &accountNbr);
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (line[0] == '\n' || line[0] == '\r')
+        {
+            continue;
+        }
+        if (sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                   &r.id, &r.userId, r.name, &r.accountNbr,
+                   &r.deposit.month, &r.deposit.day, &r.deposit.year,
+                   r.country, &r.phone, &r.amount, r.accountType) != 11 &&
+            sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                   &r.id, &r.userId, r.name, &r.accountNbr,
+                   &r.deposit.month, &r.deposit.day, &r.deposit.year,
+                   r.country, &r.phone, &r.amount, r.accountType) != '\n')
+        {
+            continue;
+        }
+        if (r.accountNbr == accountNbr && strcmp(r.name, u.name) == 0)
+        {
+            found = 1;
+            printf("\n✔ Account successfully removed!\n");
+            continue;
+        }
+
+        fprintf(temp, "%s\n", line);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (found)
+    {
+        remove(RECORDS);
+        rename("temp.txt", RECORDS);
+        success(u);
+    }
+    else
+    {
+        remove("temp.txt");
+        printf("\n✖ Account not found!\n");
+        success(u);
+    }
+
+}
