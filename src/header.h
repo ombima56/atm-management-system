@@ -1,3 +1,4 @@
+#ifndef HEADER_H 
 #define HEADER_H
 
 #include <stdio.h>
@@ -44,3 +45,7 @@ void checkAccountDetails(struct User u);
 void makeTransaction(struct User u);
 void removeExistingAccount(struct User u);
 void updateAccountInfo(struct User u);
+void transferOwnership(struct User u);
+
+extern const char *USERS;
+#endif
