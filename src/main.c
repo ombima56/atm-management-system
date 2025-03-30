@@ -30,8 +30,8 @@ void mainMenu(struct User u)
         checkAllAccounts(u);
         break;
     case 5:
-        // makeTransaction(u);
-        // break;
+        makeTransaction(u);
+        break;
     case 6:
         // removeExistingAccount(u);
         // break;
