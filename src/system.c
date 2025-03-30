@@ -3,6 +3,30 @@
 
 const char *RECORDS = "./data/records.txt";
 
+// Function to get the user ID from the username
+int getUserIdByUsername(const char *username)
+{
+    FILE *userFile = fopen(USERS, "r");
+    struct User tempUser;
+    if (!userFile)
+    {
+        printf("\nError opening users file!\n");
+        return -1;
+    }
+
+    while (fscanf(userFile, "%d %s %s", &tempUser.id, tempUser.name, tempUser.password) != EOF)
+    {
+        if (strcmp(tempUser.name, username) == 0)
+        {
+            fclose(userFile);
+            return tempUser.id;
+        }
+    }
+
+    fclose(userFile);
+    return -1;
+}
+
 int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 {
     return fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
@@ -21,6 +45,9 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
 {
+
+    u.id = getUserIdByUsername(u.name);
+
     fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
         r.id,
 	    u.id,
@@ -230,6 +257,95 @@ void updateAccountInfo(struct User u)
         printf("\n✖ Account not found!\n");
         remove("temp.txt");
     }
+}
+
+void transferOwnership(struct User u)
+{
+    struct Record r;
+    FILE *fp = fopen(RECORDS, "r");
+    FILE *temp = fopen("temp.txt", "w");
+    int accNum, found = 0, newOwnerId;
+    char newOwner[50];
+
+    if (!fp || !temp)
+    {
+        printf("Error opening records file.\n");
+        return;
+    }
+
+    printf("\nEnter the account number to transfer ownership: ");
+    scanf("%d", &accNum);
+
+    while (fscanf(fp, "%d %d %s %d %d/%d/%d %s %d %lf %s\n\n",
+                  &r.id, &r.userId, r.name, &r.accountNbr,
+                  &r.deposit.month, &r.deposit.day, &r.deposit.year,
+                  r.country, &r.phone, &r.amount, r.accountType) != EOF)
+    {
+        if (r.accountNbr == accNum && strcmp(r.name, u.name) == 0)
+        {
+            found = 1;
+
+            printf("\nEnter the new owner's username: ");
+            scanf("%s", newOwner);
+
+            newOwnerId = getUserIdByUsername(newOwner);
+            if (newOwnerId == -1)
+            {
+                printf("\n✖ Error: User '%s' not found!\n", newOwner);
+                fclose(fp);
+                fclose(temp);
+                remove("temp.txt"); 
+                return;
+            }
+
+            r.userId = newOwnerId;
+            strcpy(r.name, newOwner);
+
+            printf("\n✔ Ownership transferred successfully to %s!\n", newOwner);
+        }
+
+        fprintf(temp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+                r.id, r.userId, r.name, r.accountNbr,
+                r.deposit.month, r.deposit.day, r.deposit.year,
+                r.country, r.phone, r.amount, r.accountType);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (found)
+    {
+        remove(RECORDS);
+        rename("temp.txt", RECORDS);
+         success(u);
+    }
+    else
+    {
+        printf("\n✖ Account not found or you are not the owner!\n");
+        remove("temp.txt"); 
+    }
+}
+
+int generateNewID()
+{
+    FILE *file = fopen("./data/records.txt", "r");
+    if (file == NULL)
+    {
+        return 0;
+    }
+
+    int lastID = -1;
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL)
+    {
+        int tempID;
+        if (sscanf(line, "%d", &tempID) == 1)
+        {
+            lastID = tempID;
+        }
+    }
+    fclose(file);
+    return lastID + 1;
 }
 
 void checkAllAccounts(struct User u)
