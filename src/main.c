@@ -36,8 +36,8 @@ void mainMenu(struct User u)
         removeExistingAccount(u);
         break;
     case 7: 
-        // transferOwnership(u);
-        // break;
+        transferOwnership(u);
+        break;
     case 8:
         exit(1);
         break;
