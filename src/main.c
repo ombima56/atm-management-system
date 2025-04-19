@@ -50,6 +50,9 @@ void initMenu(struct User *u)
 {
     int r = 0;
     int option;
+    char input[50];
+    int valid_input = 0;
+
     system("clear");
     printf("\n\n\t\t======= ATM =======\n");
     printf("\n\t\t-->> Feel free to login / register :\n");
@@ -58,7 +61,15 @@ void initMenu(struct User *u)
     printf("\n\t\t[3]- exit\n");
     while (!r)
     {
-        scanf("%d", &option);
+        printf("\nEnter your choice (1-3): ");
+        fgets(input, sizeof(input), stdin);
+        valid_input = sscanf(input, "%d", &option);
+
+        if (valid_input != 1 || option < 1 || option > 3) {
+            printf("\n✖ Invalid option! Please choose option 1 for login, 2 for register, or 3 to exit.\n");
+            continue;
+        }
+
         switch (option)
         {
         case 1:
@@ -81,7 +92,7 @@ void initMenu(struct User *u)
             exit(1);
             break;
         default:
-            printf("Insert a valid operation!\n");
+            printf("\n✖ Invalid option! Please choose option 1 for login, 2 for register, or 3 to exit.\n");
         }
     }
 };
