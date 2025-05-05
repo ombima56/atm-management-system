@@ -18,7 +18,8 @@ struct Record
     int userId;
     char name[100];
     char country[100];
-    int phone;
+    int phone;           // Keep for backward compatibility
+    char phoneStr[15];   // New field to store phone as string with country code
     char accountType[10];
     int accountNbr;
     double amount;
