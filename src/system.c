@@ -1,6 +1,6 @@
 #include "header.h"
 #include <ctype.h>
-#include <time.h> // Add time.h for time functions
+#include <time.h>
 
 const char *RECORDS = "./data/records.txt";
 
