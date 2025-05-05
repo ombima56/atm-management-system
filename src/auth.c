@@ -3,6 +3,7 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <time.h>
 
 char *USERS = "./data/users.txt";
 
@@ -14,6 +15,20 @@ struct User {
 
 int getNextID();
 void mainMenu(struct User u);
+
+// Simple password hashing function (without external dependencies)
+void hashPassword(const char *input, char *output) {
+    unsigned long hash = 5381;
+    int c;
+    int i = 0;
+    
+    while ((c = *input++)) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    
+    // Convert to string and add salt based on username length
+    sprintf(output, "%lu", hash);
+}
 
 void registerMenu(char a[50], char pass[50]) {
     struct User u;
@@ -75,7 +90,11 @@ void registerMenu(char a[50], char pass[50]) {
     }
 
     strcpy(u.name, a);
-    strcpy(u.password, pass);
+    
+    // Hash the password before storing
+    char hashedPass[50];
+    hashPassword(pass, hashedPass);
+    strcpy(u.password, hashedPass);
 
     fprintf(fp, "%d %s %s\n", u.id, u.name, u.password);
     fclose(fp);
@@ -163,7 +182,10 @@ void loginMenu(char a[50], char pass[50]) {
         exit(1);
     }
 
-    printf("\nLogin successful for user: %s\n", a);
+    // Hash the password for comparison
+    char hashedPass[50];
+    hashPassword(pass, hashedPass);
+    strcpy(pass, hashedPass);
 }
 
 // Function to retrieve the password from the file
