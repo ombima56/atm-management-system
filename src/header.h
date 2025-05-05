@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h> // Add time.h for time functions
 
 struct Date
 {
@@ -47,6 +48,7 @@ void removeExistingAccount(struct User u);
 void updateAccountInfo(struct User u);
 void transferOwnership(struct User u);
 void success(struct User u);
+int generateNewID(); // Add function declaration
 
 extern const char *USERS;
 #endif
