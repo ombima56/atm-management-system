@@ -33,10 +33,34 @@ int getUserIdByUsername(const char *username)
 
 int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 {
-    return fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+    // Try to read with the new phone string format first
+    int result = fscanf(ptr, "%d %d %s %d %d/%d/%d %s %s %d %lf %s",
                   &r->id,
-		  &r->userId,
-		  name,
+                  &r->userId,
+                  name,
+                  &r->accountNbr,
+                  &r->deposit.month,
+                  &r->deposit.day,
+                  &r->deposit.year,
+                  r->country,
+                  r->phoneStr,
+                  &r->phone,
+                  &r->amount,
+                  r->accountType);
+    
+    if (result == 12) {
+        return 1; // Successfully read with new format
+    }
+    
+    // If that fails, try the old format
+    // Reset file position to try again
+    fseek(ptr, -strlen(name) - 50, SEEK_CUR); // Approximate backtracking
+    
+    // Try old format
+    result = fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                  &r->id,
+                  &r->userId,
+                  name,
                   &r->accountNbr,
                   &r->deposit.month,
                   &r->deposit.day,
@@ -44,7 +68,15 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
                   r->country,
                   &r->phone,
                   &r->amount,
-                  r->accountType) != EOF;
+                  r->accountType);
+                  
+    if (result == 11) {
+        // For backward compatibility, set phoneStr from phone
+        sprintf(r->phoneStr, "%d", r->phone);
+        return 1;
+    }
+    
+    return 0; // Failed to read with either format
 }
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
@@ -60,19 +92,39 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
         return;
     }
 
-    if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
-        r.id,
-        u.id,
-        u.name,
-        r.accountNbr,
-        r.deposit.month,
-        r.deposit.day,
-        r.deposit.year,
-        r.country,
-        r.phone,
-        r.amount,
-        r.accountType) < 0) {
-        printf("\nError writing to file\n");
+    // Check if we have the new phone string format
+    if (strlen(r.phoneStr) > 0) {
+        if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %s %d %.2lf %s\n\n",
+            r.id,
+            u.id,
+            u.name,
+            r.accountNbr,
+            r.deposit.month,
+            r.deposit.day,
+            r.deposit.year,
+            r.country,
+            r.phoneStr,
+            r.phone,
+            r.amount,
+            r.accountType) < 0) {
+            printf("\nError writing to file\n");
+        }
+    } else {
+        // Backward compatibility for old records
+        if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+            r.id,
+            u.id,
+            u.name,
+            r.accountNbr,
+            r.deposit.month,
+            r.deposit.day,
+            r.deposit.year,
+            r.country,
+            r.phone,
+            r.amount,
+            r.accountType) < 0) {
+            printf("\nError writing to file\n");
+        }
     }
 }
 
@@ -137,11 +189,89 @@ void success(struct User u)
     }
 }
 
+// Function to validate date (prevent future dates)
+int isValidDate(int month, int day, int year) {
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    
+    // Get current date
+    int curr_month = current_time->tm_mon + 1;  // tm_mon is 0-based
+    int curr_day = current_time->tm_mday;
+    int curr_year = current_time->tm_year + 1900;  // tm_year is years since 1900
+    
+    // Basic date validation
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000) {
+        return 0;
+    }
+    
+    // Check for specific month lengths
+    if ((month == 4 || month == 6 || month == 9 || month == 11) && day > 30) {
+        return 0;
+    }
+    
+    // February special case
+    if (month == 2) {
+        // Check for leap year
+        int isLeapYear = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
+        if (day > (isLeapYear ? 29 : 28)) {
+            return 0;
+        }
+    }
+    
+    // Check if date is in the future
+    if (year > curr_year) {
+        return 0;
+    }
+    if (year == curr_year && month > curr_month) {
+        return 0;
+    }
+    if (year == curr_year && month == curr_month && day > curr_day) {
+        return 0;
+    }
+    
+    return 1;
+}
+
+// Function to validate phone number
+int isValidPhoneNumber(const char *phone) {
+    int len = strlen(phone);
+    
+    // Check if it starts with '+' (international format)
+    if (phone[0] == '+') {
+        // International format should be +[country code][number] (e.g., +254712345678)
+        if (len != 13) {
+            return 0;
+        }
+        
+        // Check if all remaining characters are digits
+        for (int i = 1; i < len; i++) {
+            if (!isdigit(phone[i])) {
+                return 0;
+            }
+        }
+    } else {
+        // Local format should be 10 digits starting with 0
+        if (len != 10 || phone[0] != '0') {
+            return 0;
+        }
+        
+        // Check if all characters are digits
+        for (int i = 0; i < len; i++) {
+            if (!isdigit(phone[i])) {
+                return 0;
+            }
+        }
+    }
+    
+    return 1;
+}
+
 void createNewAcc(struct User u)
 {
     struct Record r;
     struct Record cr;
     char userName[50];
+    char phoneStr[15]; // Buffer for phone input as string
     FILE *pf = fopen(RECORDS, "a+");
     
     if (!pf) {
@@ -159,10 +289,8 @@ noAccount:
     scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
     
     // Validate date
-    if (r.deposit.month < 1 || r.deposit.month > 12 || 
-        r.deposit.day < 1 || r.deposit.day > 31 ||
-        r.deposit.year < 2000) {
-        printf("\n✖ Invalid date! Please enter a valid date.\n");
+    if (!isValidDate(r.deposit.month, r.deposit.day, r.deposit.year)) {
+        printf("\n✖ Invalid date! Please enter a valid date (not in the future).\n");
         goto noAccount;
     }
     
@@ -187,8 +315,28 @@ noAccount:
     
     printf("\nEnter the country:");
     scanf("%s", r.country);
-    printf("\nEnter the phone number:");
-    scanf("%d", &r.phone);
+    
+    // Get phone number as string first
+    printf("\nEnter the phone number (format: 0XXXXXXXXX or +XXXXXXXXXXXX):");
+    scanf("%s", phoneStr);
+    
+    // Validate phone number
+    if (!isValidPhoneNumber(phoneStr)) {
+        printf("\n✖ Invalid phone number! Please use format 0XXXXXXXXX (10 digits) or +XXXXXXXXXXXX (13 digits).\n");
+        goto noAccount;
+    }
+    
+    // Store phone number as string in a new field
+    strcpy(r.phoneStr, phoneStr);
+    
+    // For backward compatibility, also store as integer (this will only work correctly for numeric-only phones)
+    if (phoneStr[0] == '+') {
+        // Skip the '+' for the integer conversion
+        r.phone = atoi(phoneStr + 1);
+    } else {
+        r.phone = atoi(phoneStr);
+    }
+    
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
     
