@@ -42,7 +42,7 @@ void registerMenu(char a[50], char pass[50]) {
     system("clear");
     printf("\n\n\t\t======= Register =======\n");
 
-    while (getchar() != '\n');
+    // while (getchar() != '\n');
 
     do {
         printf("\nEnter username: ");
