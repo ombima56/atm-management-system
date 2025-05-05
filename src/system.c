@@ -92,39 +92,35 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
         return;
     }
 
-    // Check if we have the new phone string format
-    if (strlen(r.phoneStr) > 0) {
-        if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %s %d %.2lf %s\n\n",
-            r.id,
-            u.id,
-            u.name,
-            r.accountNbr,
-            r.deposit.month,
-            r.deposit.day,
-            r.deposit.year,
-            r.country,
-            r.phoneStr,
-            r.phone,
-            r.amount,
-            r.accountType) < 0) {
-            printf("\nError writing to file\n");
-        }
+    // Store the phone number correctly
+    // For local numbers (starting with 0), store the integer version without the leading 0
+    // For international numbers (starting with +), store the integer version without the +
+    if (r.phoneStr[0] == '0') {
+        // Convert local number to integer (skip the leading 0)
+        r.phone = atoi(r.phoneStr + 1);
+    } else if (r.phoneStr[0] == '+') {
+        // Convert international number to integer (skip the +)
+        r.phone = atoi(r.phoneStr + 1);
     } else {
-        // Backward compatibility for old records
-        if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
-            r.id,
-            u.id,
-            u.name,
-            r.accountNbr,
-            r.deposit.month,
-            r.deposit.day,
-            r.deposit.year,
-            r.country,
-            r.phone,
-            r.amount,
-            r.accountType) < 0) {
-            printf("\nError writing to file\n");
-        }
+        // Fallback for any other format
+        r.phone = atoi(r.phoneStr);
+    }
+
+    // Write to file with the new format
+    if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %s %d %.2lf %s\n\n",
+        r.id,
+        u.id,
+        u.name,
+        r.accountNbr,
+        r.deposit.month,
+        r.deposit.day,
+        r.deposit.year,
+        r.country,
+        r.phoneStr,
+        r.phone,
+        r.amount,
+        r.accountType) < 0) {
+        printf("\nError writing to file\n");
     }
 }
 
@@ -316,6 +312,7 @@ noAccount:
     printf("\nEnter the country:");
     scanf("%s", r.country);
     
+phoneEntry:
     // Get phone number as string first
     printf("\nEnter the phone number (format: 0XXXXXXXXX or +XXXXXXXXXXXX):");
     scanf("%s", phoneStr);
@@ -323,29 +320,26 @@ noAccount:
     // Validate phone number
     if (!isValidPhoneNumber(phoneStr)) {
         printf("\n✖ Invalid phone number! Please use format 0XXXXXXXXX (10 digits) or +XXXXXXXXXXXX (13 digits).\n");
-        goto noAccount;
+        goto phoneEntry; // Only go back to phone entry, not the entire form
     }
     
-    // Store phone number as string in a new field
+    // Store phone number as string
     strcpy(r.phoneStr, phoneStr);
     
-    // For backward compatibility, also store as integer (this will only work correctly for numeric-only phones)
-    if (phoneStr[0] == '+') {
-        // Skip the '+' for the integer conversion
-        r.phone = atoi(phoneStr + 1);
-    } else {
-        r.phone = atoi(phoneStr);
-    }
+    // For backward compatibility, convert to integer
+    // The actual conversion will happen in saveAccountToFile
     
+amountEntry:
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
     
     // Validate amount
     if (r.amount < 0) {
         printf("\n✖ Invalid amount! Please enter a positive value.\n");
-        goto noAccount;
+        goto amountEntry; // Only go back to amount entry
     }
     
+accountTypeEntry:
     printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", r.accountType);
     
@@ -356,7 +350,7 @@ noAccount:
         strcmp(r.accountType, "fixed02") != 0 && 
         strcmp(r.accountType, "fixed03") != 0) {
         printf("\n✖ Invalid account type! Please choose from the options provided.\n");
-        goto noAccount;
+        goto accountTypeEntry; // Only go back to account type entry
     }
 
     saveAccountToFile(pf, u, r);
