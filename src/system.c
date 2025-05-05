@@ -1,7 +1,11 @@
 #include "header.h"
 #include <ctype.h>
+#include <time.h> // Add time.h for time functions
 
 const char *RECORDS = "./data/records.txt";
+
+// Function declaration for generateNewID
+int generateNewID();
 
 // Function to get the user ID from the username
 int getUserIdByUsername(const char *username)
@@ -45,12 +49,20 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
 {
+    if (ptr == NULL) {
+        printf("\nError: File pointer is NULL\n");
+        return;
+    }
 
     u.id = getUserIdByUsername(u.name);
+    if (u.id == -1) {
+        printf("\nError: Could not find user ID\n");
+        return;
+    }
 
-    fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+    if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
         r.id,
-	    u.id,
+        u.id,
         u.name,
         r.accountNbr,
         r.deposit.month,
@@ -59,7 +71,9 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
         r.country,
         r.phone,
         r.amount,
-        r.accountType);
+        r.accountType) < 0) {
+        printf("\nError writing to file\n");
+    }
 }
 
 void stayOrReturn(int notGood, void f(struct User u), struct User u)
@@ -129,6 +143,13 @@ void createNewAcc(struct User u)
     struct Record cr;
     char userName[50];
     FILE *pf = fopen(RECORDS, "a+");
+    
+    if (!pf) {
+        printf("\nError opening records file!\n");
+        return;
+    }
+
+    r.id = generateNewID();
 
 noAccount:
     system("clear");
@@ -136,9 +157,25 @@ noAccount:
 
     printf("\nEnter today's date(mm/dd/yyyy):");
     scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
+    
+    // Validate date
+    if (r.deposit.month < 1 || r.deposit.month > 12 || 
+        r.deposit.day < 1 || r.deposit.day > 31 ||
+        r.deposit.year < 2000) {
+        printf("\n✖ Invalid date! Please enter a valid date.\n");
+        goto noAccount;
+    }
+    
     printf("\nEnter the account number:");
     scanf("%d", &r.accountNbr);
+    
+    // Validate account number
+    if (r.accountNbr <= 0) {
+        printf("\n✖ Invalid account number! Please enter a positive number.\n");
+        goto noAccount;
+    }
 
+    rewind(pf);
     while (getAccountFromFile(pf, userName, &cr))
     {
         if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
@@ -147,14 +184,32 @@ noAccount:
             goto noAccount;
         }
     }
+    
     printf("\nEnter the country:");
     scanf("%s", r.country);
     printf("\nEnter the phone number:");
     scanf("%d", &r.phone);
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
+    
+    // Validate amount
+    if (r.amount < 0) {
+        printf("\n✖ Invalid amount! Please enter a positive value.\n");
+        goto noAccount;
+    }
+    
     printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", r.accountType);
+    
+    // Validate account type
+    if (strcmp(r.accountType, "saving") != 0 && 
+        strcmp(r.accountType, "current") != 0 && 
+        strcmp(r.accountType, "fixed01") != 0 && 
+        strcmp(r.accountType, "fixed02") != 0 && 
+        strcmp(r.accountType, "fixed03") != 0) {
+        printf("\n✖ Invalid account type! Please choose from the options provided.\n");
+        goto noAccount;
+    }
 
     saveAccountToFile(pf, u, r);
 
@@ -333,18 +388,21 @@ int generateNewID()
         return 0;
     }
 
-    int lastID = -1;
+    int maxID = -1;
     char line[256];
+    int tempID;
+    
     while (fgets(line, sizeof(line), file) != NULL)
     {
-        int tempID;
         if (sscanf(line, "%d", &tempID) == 1)
         {
-            lastID = tempID;
+            if (tempID > maxID) {
+                maxID = tempID;
+            }
         }
     }
     fclose(file);
-    return lastID + 1;
+    return maxID + 1;
 }
 
 void checkAllAccounts(struct User u)
@@ -474,6 +532,9 @@ void makeTransaction(struct User u) {
     char choice;
     char line[250];
     char amountStr[50];
+    char transactionLog[300];
+    time_t now;
+    struct tm *local_time;
 
     FILE *fp = fopen(RECORDS, "r");
     FILE *temp = fopen("temp.txt", "w");
@@ -530,23 +591,52 @@ void makeTransaction(struct User u) {
 
                 } while (amount < 0 || amount > 1000000 || !isValidNumber(amountStr));
 
+                double oldAmount = r.amount;
+                
                 if (choice == '1') {
                     r.amount += amount;
                     printf("\n✔ Deposit successful! New balance: %.2lf\n", r.amount);
+                    
+                    // Log transaction
+                    now = time(NULL);
+                    local_time = localtime(&now);
+                    
+                    // Create transaction log
+                    FILE *logFile = fopen("./data/transactions.log", "a");
+                    if (logFile) {
+                        fprintf(logFile, "[%02d/%02d/%d %02d:%02d:%02d] DEPOSIT: Account %d, Amount: +%.2lf, New Balance: %.2lf\n",
+                                local_time->tm_mon + 1, local_time->tm_mday, local_time->tm_year + 1900,
+                                local_time->tm_hour, local_time->tm_min, local_time->tm_sec,
+                                r.accountNbr, amount, r.amount);
+                        fclose(logFile);
+                    }
+                    
                 } else if (choice == '2') {
                     if (amount > r.amount) {
                         printf("\n✖ Insufficient balance! Your account balance is %.2lf\n", r.amount);
                     } else {
                         r.amount -= amount;
                         printf("\n✔ Withdrawal successful! New balance: %.2lf\n", r.amount);
+                        
+                        // Log transaction
+                        now = time(NULL);
+                        local_time = localtime(&now);
+                        
+                        // Create transaction log
+                        FILE *logFile = fopen("./data/transactions.log", "a");
+                        if (logFile) {
+                            fprintf(logFile, "[%02d/%02d/%d %02d:%02d:%02d] WITHDRAW: Account %d, Amount: -%.2lf, New Balance: %.2lf\n",
+                                    local_time->tm_mon + 1, local_time->tm_mday, local_time->tm_year + 1900,
+                                    local_time->tm_hour, local_time->tm_min, local_time->tm_sec,
+                                    r.accountNbr, amount, r.amount);
+                            fclose(logFile);
+                        }
                     }
                 }
             } else {
-            printf("\n✖ You can not transact in a fixed account. Try another account\n\n");
-            
-            success(u);
-
-        }
+                printf("\n✖ You can not transact in a fixed account. Try another account\n\n");
+                success(u);
+            }
             } else if (choice == '3') {
                 printf("\n✔ Current balance: %.2lf\n", r.amount);
             } else {
@@ -569,6 +659,7 @@ void makeTransaction(struct User u) {
             return;
         }
         if (rename("temp.txt", RECORDS) != 0) {
+            printf("Error renaming temporary file!\n");
             return;
         }
         success(u);
