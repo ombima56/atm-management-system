@@ -104,7 +104,7 @@ void registerMenu(char a[50], char pass[50]) {
 
     printf("\n\nEnter 1 to go to the main menu and 0 to exit!\n");
     scanf("%d", &options);
-    while (getchar() != '\n');
+    // while (getchar() != '\n');
 
     if (options == 1) {
         mainMenu(u);
@@ -143,7 +143,7 @@ void loginMenu(char a[50], char pass[50]) {
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:\n");
 
-    while (getchar() != '\n'); // Clear input buffer
+    // while (getchar() != '\n'); // Clear input buffer
 
     do {
         printf("\nEnter username: ");
