@@ -33,31 +33,8 @@ int getUserIdByUsername(const char *username)
 
 int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 {
-    // Try to read with the new phone string format first
-    int result = fscanf(ptr, "%d %d %s %d %d/%d/%d %s %s %d %lf %s",
-                  &r->id,
-                  &r->userId,
-                  name,
-                  &r->accountNbr,
-                  &r->deposit.month,
-                  &r->deposit.day,
-                  &r->deposit.year,
-                  r->country,
-                  r->phoneStr,
-                  &r->phone,
-                  &r->amount,
-                  r->accountType);
-    
-    if (result == 12) {
-        return 1; // Successfully read with new format
-    }
-    
-    // If that fails, try the old format
-    // Reset file position to try again
-    fseek(ptr, -strlen(name) - 50, SEEK_CUR); // Approximate backtracking
-    
-    // Try old format
-    result = fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+    // Try to read with the expected format: ID UserID Name AccountNbr Date Country Phone Amount AccountType
+    int result = fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
                   &r->id,
                   &r->userId,
                   name,
@@ -69,14 +46,14 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
                   &r->phone,
                   &r->amount,
                   r->accountType);
-                  
+    
     if (result == 11) {
         // For backward compatibility, set phoneStr from phone
         sprintf(r->phoneStr, "%d", r->phone);
         return 1;
     }
     
-    return 0; // Failed to read with either format
+    return 0; // Failed to read the format
 }
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
@@ -106,8 +83,9 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
         r.phone = atoi(r.phoneStr);
     }
 
-    // Write to file with the new format
-    if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %s %d %.2lf %s\n\n",
+    // Write to file in the correct format:
+    // ID UserID Name AccountNbr Date Country Phone Amount AccountType
+    if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
         r.id,
         u.id,
         u.name,
@@ -116,7 +94,6 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
         r.deposit.day,
         r.deposit.year,
         r.country,
-        r.phoneStr,
         r.phone,
         r.amount,
         r.accountType) < 0) {
@@ -658,7 +635,6 @@ void makeTransaction(struct User u) {
     char choice;
     char line[250];
     char amountStr[50];
-    char transactionLog[300];
     time_t now;
     struct tm *local_time;
 
@@ -677,6 +653,7 @@ void makeTransaction(struct User u) {
     while (fgets(line, sizeof(line), fp)) {
         if (line[0] == '\n') continue;
 
+        // Try standard format: ID UserID Name AccountNbr Date Country Phone Amount AccountType
         if (sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
                    &r.id, &r.userId, r.name, &r.accountNbr,
                    &r.deposit.month, &r.deposit.day, &r.deposit.year,
@@ -684,6 +661,9 @@ void makeTransaction(struct User u) {
             printf("Error reading line, skipping...\n");
             continue;
         }
+        
+        // For backward compatibility, set phoneStr from phone
+        sprintf(r.phoneStr, "%d", r.phone);
 
         if (r.accountNbr == accNum && strcmp(u.name, r.name) == 0 ){
             
@@ -770,6 +750,7 @@ void makeTransaction(struct User u) {
             }
         }
 
+        // Write back in the standard format
         fprintf(temp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
                 r.id, r.userId, r.name, r.accountNbr,
                 r.deposit.month, r.deposit.day, r.deposit.year,
