@@ -329,6 +329,25 @@ int getValidDate(int *month, int *day, int *year) {
     return valid;
 }
 
+// Function to validate country name
+int isValidCountryName(const char *country) {
+    // Check if empty
+    if (strlen(country) == 0) {
+        return 0;
+    }
+    
+    // Check if numeric only
+    int allDigits = 1;
+    for (int i = 0; country[i] != '\0'; i++) {
+        if (!isdigit(country[i])) {
+            allDigits = 0;
+            break;
+        }
+    }
+    
+    return !allDigits;  // Valid if not all digits
+}
+
 void createNewAcc(struct User u)
 {
     struct Record r;
@@ -379,23 +398,28 @@ void createNewAcc(struct User u)
         break;
     } while (1);
     
-    // Country entry with space handling
-    printf("\nEnter the country: ");
-    while (getchar() != '\n'); // Clear input buffer
-    if (fgets(input, sizeof(input), stdin) == NULL) {
-        printf("\n✖ Error reading input.\n");
-        fclose(pf);
-        return;
-    }
-    input[strcspn(input, "\n")] = 0; // Remove newline
-    
+    // Country entry with validation and space handling
+    char countryName[100];
+    do {
+        printf("\nEnter the country: ");
+        scanf(" %[^\n]", countryName);
+        getchar();  // Clear newline
+        
+        if (!isValidCountryName(countryName)) {
+            printf("\n✖ Invalid country name! A country name cannot contain only numbers.\n");
+        } else {
+            break;
+        }
+    } while (1);
+
     // Replace spaces with hyphens
-    for (int i = 0; i < strlen(input); i++) {
-        if (input[i] == ' ') {
-            input[i] = '-';
+    for (int i = 0; i < strlen(countryName); i++) {
+        if (countryName[i] == ' ') {
+            countryName[i] = '-';
         }
     }
-    strcpy(r.country, input);
+
+    strcpy(r.country, countryName);
     
     // Phone number entry with validation
     do {
