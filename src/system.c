@@ -166,64 +166,48 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
 void success(struct User u)
 {
     int option;
-    invalid:
-    printf("Enter 1 to go to the main menu and 0 to exit!\n");
+    printf("\n✅ Success!\n\n");
+    printf("Enter 1 to go to the main menu and 0 to exit: ");
     scanf("%d", &option);
-    system("clear");
+    
     if (option == 1)
     {
+        system("clear");
         mainMenu(u);
-    }
-    else if (option == 0)
-    {
-        exit(1);
     }
     else
     {
-        printf("Insert a valid operation!\n");
-        goto invalid;
+        exit(0);
     }
 }
 
 // Function to validate date (prevent future dates)
-int isValidDate(int month, int day, int year) {
+int isValidDate(int month, int day, int year)
+{
     time_t now = time(NULL);
     struct tm *current_time = localtime(&now);
     
-    // Get current date
-    int curr_month = current_time->tm_mon + 1;  // tm_mon is 0-based
-    int curr_day = current_time->tm_mday;
-    int curr_year = current_time->tm_year + 1900;  // tm_year is years since 1900
-    
-    // Basic date validation
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000) {
+    // Check if date is valid
+    if (month < 1 || month > 12)
         return 0;
-    }
     
-    // Check for specific month lengths
-    if ((month == 4 || month == 6 || month == 9 || month == 11) && day > 30) {
+    // Check days per month
+    int daysInMonth[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    
+    // Adjust for leap year
+    if (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
+        daysInMonth[2] = 29;
+    
+    if (day < 1 || day > daysInMonth[month])
         return 0;
-    }
-    
-    // February special case
-    if (month == 2) {
-        // Check for leap year
-        int isLeapYear = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
-        if (day > (isLeapYear ? 29 : 28)) {
-            return 0;
-        }
-    }
     
     // Check if date is in the future
-    if (year > curr_year) {
+    if (year > current_time->tm_year + 1900)
         return 0;
-    }
-    if (year == curr_year && month > curr_month) {
+    if (year == current_time->tm_year + 1900 && month > current_time->tm_mon + 1)
         return 0;
-    }
-    if (year == curr_year && month == curr_month && day > curr_day) {
+    if (year == current_time->tm_year + 1900 && month == current_time->tm_mon + 1 && day > current_time->tm_mday)
         return 0;
-    }
     
     return 1;
 }
