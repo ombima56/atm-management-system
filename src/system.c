@@ -312,9 +312,20 @@ void createNewAcc(struct User u)
         goto accountEntry;
     }
     
-    // Country entry
+    // Country entry with space handling
     printf("\nEnter the country:");
-    scanf("%s", r.country);
+    char countryInput[100];
+    scanf(" %[^\n]", countryInput);  // Read the entire line including spaces
+
+    // Replace spaces with hyphens
+    for (int i = 0; i < strlen(countryInput); i++) {
+        if (countryInput[i] == ' ') {
+            countryInput[i] = '-';
+        }
+    }
+
+    // Copy to record
+    strcpy(r.country, countryInput);
     
     // Phone number entry with validation
     phoneEntry:
@@ -614,7 +625,17 @@ void checkAccountDetails(struct User u)
             printf("\n===== Account Details =====\n");
             printf("Account Number: %d\n", r.accountNbr);
             printf("Name: %s\n", userName);
-            printf("Country: %s\n", r.country);
+            char displayCountry[100];
+            strcpy(displayCountry, r.country);
+
+            // Convert hyphens back to spaces for display
+            for (int i = 0; i < strlen(displayCountry); i++) {
+                if (displayCountry[i] == '-') {
+                    displayCountry[i] = ' ';
+                }
+            }
+
+            printf("Country: %s\n", displayCountry);
             printf("Phone: %s\n", r.phoneStr);
             printf("Balance: $%.2lf\n", r.amount);
             printf("Account Type: %s\n", r.accountType);
