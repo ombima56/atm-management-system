@@ -33,27 +33,88 @@ int getUserIdByUsername(const char *username)
 
 int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 {
-    // Try to read with the expected format: ID UserID Name AccountNbr Date Country Phone Amount AccountType
-    int result = fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
-                  &r->id,
-                  &r->userId,
-                  name,
-                  &r->accountNbr,
-                  &r->deposit.month,
-                  &r->deposit.day,
-                  &r->deposit.year,
-                  r->country,
-                  &r->phone,
-                  &r->amount,
-                  r->accountType);
+    char line[256];
     
-    if (result == 11) {
-        // For backward compatibility, set phoneStr from phone
-        sprintf(r->phoneStr, "%d", r->phone);
-        return 1;
+    // Skip empty lines
+    while (fgets(line, sizeof(line), ptr)) {
+        // Remove newline character
+        line[strcspn(line, "\n")] = 0;
+        
+        // Skip empty lines
+        if (strlen(line) == 0) {
+            continue;
+        }
+        
+        // Try to parse the line
+        int result = sscanf(line, "%d %d %s %d %d/%d/%d %s %s %lf %s",
+                      &r->id,
+                      &r->userId,
+                      name,
+                      &r->accountNbr,
+                      &r->deposit.month,
+                      &r->deposit.day,
+                      &r->deposit.year,
+                      r->country,
+                      r->phoneStr,
+                      &r->amount,
+                      r->accountType);
+        
+        if (result == 11) {
+            // For backward compatibility, set phone from phoneStr
+            r->phone = atoi(r->phoneStr);
+            return 1;
+        }
+        
+        // Try alternative format (with phone as integer)
+        result = sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                      &r->id,
+                      &r->userId,
+                      name,
+                      &r->accountNbr,
+                      &r->deposit.month,
+                      &r->deposit.day,
+                      &r->deposit.year,
+                      r->country,
+                      &r->phone,
+                      &r->amount,
+                      r->accountType);
+        
+        if (result == 11) {
+            // For backward compatibility, set phoneStr from phone
+            sprintf(r->phoneStr, "%d", r->phone);
+            return 1;
+        }
+        
+        // Try another alternative format (with two phone numbers)
+        char phoneStr1[15], phoneStr2[15];
+        result = sscanf(line, "%d %d %s %d %d/%d/%d %s %s %s %lf %s",
+                      &r->id,
+                      &r->userId,
+                      name,
+                      &r->accountNbr,
+                      &r->deposit.month,
+                      &r->deposit.day,
+                      &r->deposit.year,
+                      r->country,
+                      phoneStr1,
+                      phoneStr2,
+                      &r->amount,
+                      r->accountType);
+        
+        if (result == 12) {
+            // Use the first phone number as string
+            strcpy(r->phoneStr, phoneStr1);
+            // Use the second phone number as integer
+            r->phone = atoi(phoneStr2);
+            return 1;
+        }
+        
+        // If we get here, we couldn't parse the line
+        printf("Warning: Could not parse line: %s\n", line);
+        return 0;
     }
     
-    return 0; // Failed to read the format
+    return 0; // End of file or error
 }
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
@@ -540,6 +601,7 @@ void checkAllAccounts(struct User u)
 void checkAccountDetails(struct User u)
 {
     struct Record r;
+    char userName[100];
     FILE *fp = fopen(RECORDS, "r");
     int accNum, found = 0;
     float interest;
@@ -554,24 +616,33 @@ void checkAccountDetails(struct User u)
     printf("\nEnter account number to check: ");
     scanf("%d", &accNum);
 
-    while (fscanf(fp, "%d %d %s %d %d/%d/%d %s %d %lf %s",
-                  &r.id, &r.userId, r.name, &r.accountNbr,
-                  &r.deposit.month, &r.deposit.day, &r.deposit.year,
-                  r.country, &r.phone, &r.amount, r.accountType) != EOF)
+    // Reset file pointer to beginning
+    rewind(fp);
+    
+    while (getAccountFromFile(fp, userName, &r))
     {
-        if (r.accountNbr == accNum && strcmp(r.name, u.name) == 0)
+        if (r.accountNbr == accNum)
         {
+            // If not the owner, check if we should allow viewing
+            if (strcmp(userName, u.name) != 0) {
+                printf("\n✖ This account belongs to %s, not to you.\n", userName);
+                fclose(fp);
+                success(u);
+                return;
+            }
+            
             found = 1;
 
             printf("\n===== Account Details =====\n");
             printf("Account Number: %d\n", r.accountNbr);
-            printf("Name: %s\n", r.name);
+            printf("Name: %s\n", userName);
             printf("Country: %s\n", r.country);
-            printf("Phone: %d\n", r.phone);
+            printf("Phone: %s\n", r.phoneStr);
             printf("Balance: $%.2lf\n", r.amount);
             printf("Account Type: %s\n", r.accountType);
             printf("Date Opened: %02d/%02d/%d\n", r.deposit.month, r.deposit.day, r.deposit.year);
 
+            // Interest calculation code remains the same
             if (strcmp(r.accountType, "saving") == 0)
             {
                 interest = 7 * r.amount / 100;
@@ -598,19 +669,16 @@ void checkAccountDetails(struct User u)
                 printf("\n✖ No interest is applied as this is a current account.\n");
             }
 
+            fclose(fp);
             success(u);
-            break;
+            return;
         }
     }
 
-    if (!found)
-    {
-        printf("\n✖ Account not found!\n");
-        success(u);
-    }
-
+    printf("\n✖ Account not found!\n");
     fclose(fp);
-};
+    success(u);
+}
 
 // Function to check if input is a valid number
 int isValidNumber(const char *str) {
