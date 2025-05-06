@@ -49,7 +49,7 @@ void removeExistingAccount(struct User u);
 void updateAccountInfo(struct User u);
 void transferOwnership(struct User u);
 void success(struct User u);
-int generateNewID(); // Add function declaration
+int generateNewID();
 
 extern const char *USERS;
 #endif
