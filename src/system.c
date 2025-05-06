@@ -35,17 +35,13 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 {
     char line[256];
     
-    // Skip empty lines
     while (fgets(line, sizeof(line), ptr)) {
-        // Remove newline character
         line[strcspn(line, "\n")] = 0;
         
-        // Skip empty lines
         if (strlen(line) == 0) {
             continue;
         }
         
-        // Try to parse the line
         int result = sscanf(line, "%d %d %s %d %d/%d/%d %s %s %lf %s",
                       &r->id,
                       &r->userId,
@@ -60,12 +56,10 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
                       r->accountType);
         
         if (result == 11) {
-            // For backward compatibility, set phone from phoneStr
             r->phone = atoi(r->phoneStr);
             return 1;
         }
         
-        // Try alternative format (with phone as integer)
         result = sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
                       &r->id,
                       &r->userId,
@@ -80,12 +74,10 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
                       r->accountType);
         
         if (result == 11) {
-            // For backward compatibility, set phoneStr from phone
             sprintf(r->phoneStr, "%d", r->phone);
             return 1;
         }
         
-        // Try another alternative format (with two phone numbers)
         char phoneStr1[15], phoneStr2[15];
         result = sscanf(line, "%d %d %s %d %d/%d/%d %s %s %s %lf %s",
                       &r->id,
@@ -102,19 +94,16 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
                       r->accountType);
         
         if (result == 12) {
-            // Use the first phone number as string
             strcpy(r->phoneStr, phoneStr1);
-            // Use the second phone number as integer
             r->phone = atoi(phoneStr2);
             return 1;
         }
         
-        // If we get here, we couldn't parse the line
         printf("Warning: Could not parse line: %s\n", line);
         return 0;
     }
     
-    return 0; // End of file or error
+    return 0;
 }
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
@@ -130,22 +119,14 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
         return;
     }
 
-    // Store the phone number correctly
-    // For local numbers (starting with 0), store the integer version without the leading 0
-    // For international numbers (starting with +), store the integer version without the +
     if (r.phoneStr[0] == '0') {
-        // Convert local number to integer (skip the leading 0)
         r.phone = atoi(r.phoneStr + 1);
     } else if (r.phoneStr[0] == '+') {
-        // Convert international number to integer (skip the +)
         r.phone = atoi(r.phoneStr + 1);
     } else {
-        // Fallback for any other format
         r.phone = atoi(r.phoneStr);
     }
 
-    // Write to file in the correct format:
-    // ID UserID Name AccountNbr Date Country Phone Amount AccountType
     if (fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
         r.id,
         u.id,
@@ -225,21 +206,18 @@ int isValidDate(int month, int day, int year)
     time_t now = time(NULL);
     struct tm *current_time = localtime(&now);
     
-    // Check if date is valid
     if (month < 1 || month > 12)
         return 0;
     
     // Check days per month
     int daysInMonth[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     
-    // Adjust for leap year
     if (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
         daysInMonth[2] = 29;
     
     if (day < 1 || day > daysInMonth[month])
         return 0;
     
-    // Check if date is in the future
     if (year > current_time->tm_year + 1900)
         return 0;
     if (year == current_time->tm_year + 1900 && month > current_time->tm_mon + 1)
@@ -254,26 +232,21 @@ int isValidDate(int month, int day, int year)
 int isValidPhoneNumber(const char *phone) {
     int len = strlen(phone);
     
-    // Check if it starts with '+' (international format)
     if (phone[0] == '+') {
-        // International format should be +[country code][number] (e.g., +254712345678)
         if (len != 13) {
             return 0;
         }
         
-        // Check if all remaining characters are digits
         for (int i = 1; i < len; i++) {
             if (!isdigit(phone[i])) {
                 return 0;
             }
         }
     } else {
-        // Local format should be 10 digits starting with 0
         if (len != 10 || phone[0] != '0') {
             return 0;
         }
         
-        // Check if all characters are digits
         for (int i = 0; i < len; i++) {
             if (!isdigit(phone[i])) {
                 return 0;
@@ -289,7 +262,7 @@ void createNewAcc(struct User u)
     struct Record r;
     struct Record cr;
     char userName[50];
-    char phoneStr[15]; // Buffer for phone input as string
+    char phoneStr[15];
     FILE *pf = fopen(RECORDS, "a+");
     
     if (!pf) {
@@ -335,11 +308,9 @@ noAccount:
     scanf("%s", r.country);
     
 phoneEntry:
-    // Get phone number as string first
     printf("\nEnter the phone number (format: 0XXXXXXXXX or +XXXXXXXXXXXX):");
     scanf("%s", phoneStr);
     
-    // Validate phone number
     if (!isValidPhoneNumber(phoneStr)) {
         printf("\n✖ Invalid phone number! Please use format 0XXXXXXXXX (10 digits) or +XXXXXXXXXXXX (13 digits).\n");
         goto phoneEntry;
@@ -348,14 +319,10 @@ phoneEntry:
     // Store phone number as string
     strcpy(r.phoneStr, phoneStr);
     
-    // For backward compatibility, convert to integer
-    // The actual conversion will happen in saveAccountToFile
-    
     amountEntry:
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
     
-    // Validate amount
     if (r.amount < 0) {
         printf("\n✖ Invalid amount! Please enter a positive value.\n");
         goto amountEntry;
@@ -365,7 +332,6 @@ accountTypeEntry:
     printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", r.accountType);
     
-    // Validate account type
     if (strcmp(r.accountType, "saving") != 0 && 
         strcmp(r.accountType, "current") != 0 && 
         strcmp(r.accountType, "fixed01") != 0 && 
@@ -642,7 +608,6 @@ void checkAccountDetails(struct User u)
             printf("Account Type: %s\n", r.accountType);
             printf("Date Opened: %02d/%02d/%d\n", r.deposit.month, r.deposit.day, r.deposit.year);
 
-            // Interest calculation code remains the same
             if (strcmp(r.accountType, "saving") == 0)
             {
                 interest = 7 * r.amount / 100;
@@ -721,7 +686,6 @@ void makeTransaction(struct User u) {
     while (fgets(line, sizeof(line), fp)) {
         if (line[0] == '\n') continue;
 
-        // Try standard format: ID UserID Name AccountNbr Date Country Phone Amount AccountType
         if (sscanf(line, "%d %d %s %d %d/%d/%d %s %d %lf %s",
                    &r.id, &r.userId, r.name, &r.accountNbr,
                    &r.deposit.month, &r.deposit.day, &r.deposit.year,
@@ -730,7 +694,6 @@ void makeTransaction(struct User u) {
             continue;
         }
         
-        // For backward compatibility, set phoneStr from phone
         sprintf(r.phoneStr, "%d", r.phone);
 
         if (r.accountNbr == accNum && strcmp(u.name, r.name) == 0 ){
@@ -771,11 +734,9 @@ void makeTransaction(struct User u) {
                     r.amount += amount;
                     printf("\n✔ Deposit successful! New balance: %.2lf\n", r.amount);
                     
-                    // Log transaction
                     now = time(NULL);
                     local_time = localtime(&now);
                     
-                    // Create transaction log
                     FILE *logFile = fopen("./data/transactions.log", "a");
                     if (logFile) {
                         fprintf(logFile, "[%02d/%02d/%d %02d:%02d:%02d] DEPOSIT: Account %d, Amount: +%.2lf, New Balance: %.2lf\n",
@@ -792,11 +753,9 @@ void makeTransaction(struct User u) {
                         r.amount -= amount;
                         printf("\n✔ Withdrawal successful! New balance: %.2lf\n", r.amount);
                         
-                        // Log transaction
                         now = time(NULL);
                         local_time = localtime(&now);
                         
-                        // Create transaction log
                         FILE *logFile = fopen("./data/transactions.log", "a");
                         if (logFile) {
                             fprintf(logFile, "[%02d/%02d/%d %02d:%02d:%02d] WITHDRAW: Account %d, Amount: -%.2lf, New Balance: %.2lf\n",
@@ -818,7 +777,6 @@ void makeTransaction(struct User u) {
             }
         }
 
-        // Write back in the standard format
         fprintf(temp, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
                 r.id, r.userId, r.name, r.accountNbr,
                 r.deposit.month, r.deposit.day, r.deposit.year,
