@@ -304,7 +304,7 @@ phoneEntry:
     // Validate phone number
     if (!isValidPhoneNumber(phoneStr)) {
         printf("\n✖ Invalid phone number! Please use format 0XXXXXXXXX (10 digits) or +XXXXXXXXXXXX (13 digits).\n");
-        goto phoneEntry; // Only go back to phone entry, not the entire form
+        goto phoneEntry;
     }
     
     // Store phone number as string
@@ -313,14 +313,14 @@ phoneEntry:
     // For backward compatibility, convert to integer
     // The actual conversion will happen in saveAccountToFile
     
-amountEntry:
+    amountEntry:
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
     
     // Validate amount
     if (r.amount < 0) {
         printf("\n✖ Invalid amount! Please enter a positive value.\n");
-        goto amountEntry; // Only go back to amount entry
+        goto amountEntry;
     }
     
 accountTypeEntry:
@@ -334,7 +334,7 @@ accountTypeEntry:
         strcmp(r.accountType, "fixed02") != 0 && 
         strcmp(r.accountType, "fixed03") != 0) {
         printf("\n✖ Invalid account type! Please choose from the options provided.\n");
-        goto accountTypeEntry; // Only go back to account type entry
+        goto accountTypeEntry;
     }
 
     saveAccountToFile(pf, u, r);
