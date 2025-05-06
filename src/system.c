@@ -269,10 +269,8 @@ int getValidInt(const char *prompt) {
             continue;
         }
         
-        // Remove newline
         input[strcspn(input, "\n")] = 0;
         
-        // Check if input contains only digits
         valid = 1;
         for (int i = 0; input[i] != '\0'; i++) {
             if (!isdigit(input[i])) {
@@ -303,10 +301,8 @@ int getValidDate(int *month, int *day, int *year) {
             continue;
         }
         
-        // Remove newline
         input[strcspn(input, "\n")] = 0;
         
-        // Check format with regex-like validation
         int items = sscanf(input, "%d/%d/%d", &m, &d, &y);
         
         if (items != 3) {
@@ -331,7 +327,6 @@ int getValidDate(int *month, int *day, int *year) {
 
 // Function to validate country name
 int isValidCountryName(const char *country) {
-    // Check if empty
     if (strlen(country) == 0) {
         return 0;
     }
@@ -345,7 +340,7 @@ int isValidCountryName(const char *country) {
         }
     }
     
-    return !allDigits;  // Valid if not all digits
+    return !allDigits;
 }
 
 void createNewAcc(struct User u)
@@ -403,7 +398,7 @@ void createNewAcc(struct User u)
     do {
         printf("\nEnter the country: ");
         scanf(" %[^\n]", countryName);
-        getchar();  // Clear newline
+        getchar();
         
         if (!isValidCountryName(countryName)) {
             printf("\n✖ Invalid country name! A country name cannot contain only numbers.\n");
@@ -412,7 +407,6 @@ void createNewAcc(struct User u)
         }
     } while (1);
 
-    // Replace spaces with hyphens
     for (int i = 0; i < strlen(countryName); i++) {
         if (countryName[i] == ' ') {
             countryName[i] = '-';
@@ -438,7 +432,6 @@ void createNewAcc(struct User u)
         break;
     } while (1);
     
-    // Store phone number as string
     strcpy(r.phoneStr, phoneStr);
     
     // Amount entry with validation
@@ -767,7 +760,6 @@ void checkAccountDetails(struct User u)
             char displayCountry[100];
             strcpy(displayCountry, r.country);
 
-            // Convert hyphens back to spaces for display
             for (int i = 0; i < strlen(displayCountry); i++) {
                 if (displayCountry[i] == '-') {
                     displayCountry[i] = ' ';
