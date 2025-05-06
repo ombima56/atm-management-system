@@ -185,7 +185,6 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
 void success(struct User u)
 {
     int option;
-    printf("\n✅ Success!\n\n");
     printf("Enter 1 to go to the main menu and 0 to exit: ");
     scanf("%d", &option);
     
@@ -272,42 +271,53 @@ void createNewAcc(struct User u)
 
     r.id = generateNewID();
 
-noAccount:
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
+    // Date entry with validation
+    dateEntry:
     printf("\nEnter today's date(mm/dd/yyyy):");
     scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
     
-    // Validate date
     if (!isValidDate(r.deposit.month, r.deposit.day, r.deposit.year)) {
         printf("\n✖ Invalid date! Please enter a valid date (not in the future).\n");
-        goto noAccount;
+        goto dateEntry;
     }
     
+    // Account number entry with validation
+    accountEntry:
     printf("\nEnter the account number:");
     scanf("%d", &r.accountNbr);
     
-    // Validate account number
     if (r.accountNbr <= 0) {
         printf("\n✖ Invalid account number! Please enter a positive number.\n");
-        goto noAccount;
+        goto accountEntry;
     }
 
+    // Check if account number already exists for ANY user
     rewind(pf);
+    int accountExists = 0;
     while (getAccountFromFile(pf, userName, &cr))
     {
-        if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
+        if (cr.accountNbr == r.accountNbr)
         {
-            printf("✖ This Account already exists for this user\n\n");
-            goto noAccount;
+            accountExists = 1;
+            break;
         }
     }
     
+    if (accountExists) {
+        printf("\n✖ Account number %d already exists. Please choose a different number.\n", 
+               r.accountNbr);
+        goto accountEntry;
+    }
+    
+    // Country entry
     printf("\nEnter the country:");
     scanf("%s", r.country);
     
-phoneEntry:
+    // Phone number entry with validation
+    phoneEntry:
     printf("\nEnter the phone number (format: 0XXXXXXXXX or +XXXXXXXXXXXX):");
     scanf("%s", phoneStr);
     
@@ -319,6 +329,7 @@ phoneEntry:
     // Store phone number as string
     strcpy(r.phoneStr, phoneStr);
     
+    // Amount entry with validation
     amountEntry:
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
@@ -328,7 +339,8 @@ phoneEntry:
         goto amountEntry;
     }
     
-accountTypeEntry:
+    // Account type entry with validation
+    accountTypeEntry:
     printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", r.accountType);
     
