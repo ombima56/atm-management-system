@@ -256,12 +256,86 @@ int isValidPhoneNumber(const char *phone) {
     return 1;
 }
 
+// Add this helper function for safe integer input
+int getValidInt(const char *prompt) {
+    char input[50];
+    int value;
+    int valid = 0;
+    
+    do {
+        printf("%s", prompt);
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            printf("\n✖ Error reading input. Please try again.\n");
+            continue;
+        }
+        
+        // Remove newline
+        input[strcspn(input, "\n")] = 0;
+        
+        // Check if input contains only digits
+        valid = 1;
+        for (int i = 0; input[i] != '\0'; i++) {
+            if (!isdigit(input[i])) {
+                valid = 0;
+                printf("\n✖ Invalid input! Please enter numbers only.\n");
+                break;
+            }
+        }
+        
+        if (valid) {
+            value = atoi(input);
+        }
+    } while (!valid);
+    
+    return value;
+}
+
+// Function to safely get a date
+int getValidDate(int *month, int *day, int *year) {
+    char input[50];
+    int m, d, y;
+    int valid = 0;
+    
+    do {
+        printf("\nEnter today's date(mm/dd/yyyy): ");
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            printf("\n✖ Error reading input. Please try again.\n");
+            continue;
+        }
+        
+        // Remove newline
+        input[strcspn(input, "\n")] = 0;
+        
+        // Check format with regex-like validation
+        int items = sscanf(input, "%d/%d/%d", &m, &d, &y);
+        
+        if (items != 3) {
+            printf("\n✖ Invalid date format! Please use mm/dd/yyyy format.\n");
+            continue;
+        }
+        
+        if (!isValidDate(m, d, y)) {
+            printf("\n✖ Invalid date! Please enter a valid date (not in the future).\n");
+            continue;
+        }
+        
+        *month = m;
+        *day = d;
+        *year = y;
+        valid = 1;
+        
+    } while (!valid);
+    
+    return valid;
+}
+
 void createNewAcc(struct User u)
 {
     struct Record r;
     struct Record cr;
     char userName[50];
     char phoneStr[15];
+    char input[100];
     FILE *pf = fopen(RECORDS, "a+");
     
     if (!pf) {
@@ -274,95 +348,136 @@ void createNewAcc(struct User u)
     system("clear");
     printf("\t\t\t===== New record =====\n");
 
-    // Date entry with validation
-    dateEntry:
-    printf("\nEnter today's date(mm/dd/yyyy):");
-    scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
-    
-    if (!isValidDate(r.deposit.month, r.deposit.day, r.deposit.year)) {
-        printf("\n✖ Invalid date! Please enter a valid date (not in the future).\n");
-        goto dateEntry;
-    }
+    // Get date with validation
+    getValidDate(&r.deposit.month, &r.deposit.day, &r.deposit.year);
     
     // Account number entry with validation
-    accountEntry:
-    printf("\nEnter the account number:");
-    scanf("%d", &r.accountNbr);
-    
-    if (r.accountNbr <= 0) {
-        printf("\n✖ Invalid account number! Please enter a positive number.\n");
-        goto accountEntry;
-    }
-
-    // Check if account number already exists for ANY user
-    rewind(pf);
-    int accountExists = 0;
-    while (getAccountFromFile(pf, userName, &cr))
-    {
-        if (cr.accountNbr == r.accountNbr)
-        {
-            accountExists = 1;
-            break;
+    do {
+        r.accountNbr = getValidInt("\nEnter the account number: ");
+        
+        if (r.accountNbr <= 0) {
+            printf("\n✖ Invalid account number! Please enter a positive number.\n");
+            continue;
         }
-    }
-    
-    if (accountExists) {
-        printf("\n✖ Account number %d already exists. Please choose a different number.\n", 
-               r.accountNbr);
-        goto accountEntry;
-    }
+        
+        // Check if account number already exists
+        rewind(pf);
+        int accountExists = 0;
+        while (getAccountFromFile(pf, userName, &cr)) {
+            if (cr.accountNbr == r.accountNbr) {
+                accountExists = 1;
+                break;
+            }
+        }
+        
+        if (accountExists) {
+            printf("\n✖ Account number %d already exists (owned by %s). Please choose a different number.\n", 
+                   r.accountNbr, userName);
+            continue;
+        }
+        
+        break;
+    } while (1);
     
     // Country entry with space handling
-    printf("\nEnter the country:");
-    char countryInput[100];
-    scanf(" %[^\n]", countryInput);  // Read the entire line including spaces
-
+    printf("\nEnter the country: ");
+    while (getchar() != '\n'); // Clear input buffer
+    if (fgets(input, sizeof(input), stdin) == NULL) {
+        printf("\n✖ Error reading input.\n");
+        fclose(pf);
+        return;
+    }
+    input[strcspn(input, "\n")] = 0; // Remove newline
+    
     // Replace spaces with hyphens
-    for (int i = 0; i < strlen(countryInput); i++) {
-        if (countryInput[i] == ' ') {
-            countryInput[i] = '-';
+    for (int i = 0; i < strlen(input); i++) {
+        if (input[i] == ' ') {
+            input[i] = '-';
         }
     }
-
-    // Copy to record
-    strcpy(r.country, countryInput);
+    strcpy(r.country, input);
     
     // Phone number entry with validation
-    phoneEntry:
-    printf("\nEnter the phone number (format: 0XXXXXXXXX or +XXXXXXXXXXXX):");
-    scanf("%s", phoneStr);
-    
-    if (!isValidPhoneNumber(phoneStr)) {
-        printf("\n✖ Invalid phone number! Please use format 0XXXXXXXXX (10 digits) or +XXXXXXXXXXXX (13 digits).\n");
-        goto phoneEntry;
-    }
+    do {
+        printf("\nEnter the phone number (format: 0XXXXXXXXX or +XXXXXXXXXXXX): ");
+        if (fgets(phoneStr, sizeof(phoneStr), stdin) == NULL) {
+            printf("\n✖ Error reading input.\n");
+            continue;
+        }
+        phoneStr[strcspn(phoneStr, "\n")] = 0; // Remove newline
+        
+        if (!isValidPhoneNumber(phoneStr)) {
+            printf("\n✖ Invalid phone number! Please use format 0XXXXXXXXX (10 digits) or +XXXXXXXXXXXX (13 digits).\n");
+            continue;
+        }
+        
+        break;
+    } while (1);
     
     // Store phone number as string
     strcpy(r.phoneStr, phoneStr);
     
     // Amount entry with validation
-    amountEntry:
-    printf("\nEnter amount to deposit: $");
-    scanf("%lf", &r.amount);
-    
-    if (r.amount < 0) {
-        printf("\n✖ Invalid amount! Please enter a positive value.\n");
-        goto amountEntry;
-    }
+    do {
+        printf("\nEnter amount to deposit: $");
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            printf("\n✖ Error reading input.\n");
+            continue;
+        }
+        input[strcspn(input, "\n")] = 0; // Remove newline
+        
+        // Check if input is a valid number
+        int valid = 1;
+        int decimal_points = 0;
+        for (int i = 0; input[i] != '\0'; i++) {
+            if (input[i] == '.') {
+                decimal_points++;
+                if (decimal_points > 1) {
+                    valid = 0;
+                    break;
+                }
+            } else if (!isdigit(input[i])) {
+                valid = 0;
+                break;
+            }
+        }
+        
+        if (!valid) {
+            printf("\n✖ Invalid amount! Please enter a valid number.\n");
+            continue;
+        }
+        
+        r.amount = atof(input);
+        
+        if (r.amount < 0) {
+            printf("\n✖ Invalid amount! Please enter a positive value.\n");
+            continue;
+        }
+        
+        break;
+    } while (1);
     
     // Account type entry with validation
-    accountTypeEntry:
-    printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
-    scanf("%s", r.accountType);
-    
-    if (strcmp(r.accountType, "saving") != 0 && 
-        strcmp(r.accountType, "current") != 0 && 
-        strcmp(r.accountType, "fixed01") != 0 && 
-        strcmp(r.accountType, "fixed02") != 0 && 
-        strcmp(r.accountType, "fixed03") != 0) {
-        printf("\n✖ Invalid account type! Please choose from the options provided.\n");
-        goto accountTypeEntry;
-    }
+    do {
+        printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice: ");
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            printf("\n✖ Error reading input.\n");
+            continue;
+        }
+        input[strcspn(input, "\n")] = 0; // Remove newline
+        
+        if (strcmp(input, "saving") != 0 && 
+            strcmp(input, "current") != 0 && 
+            strcmp(input, "fixed01") != 0 && 
+            strcmp(input, "fixed02") != 0 && 
+            strcmp(input, "fixed03") != 0) {
+            printf("\n✖ Invalid account type! Please choose from the options provided.\n");
+            continue;
+        }
+        
+        strcpy(r.accountType, input);
+        break;
+    } while (1);
 
     saveAccountToFile(pf, u, r);
 
