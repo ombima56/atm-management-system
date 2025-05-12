@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h> // Add time.h for time functions
 
 struct Date
 {
@@ -17,7 +18,8 @@ struct Record
     int userId;
     char name[100];
     char country[100];
-    int phone;
+    int phone;           // Keep for backward compatibility
+    char phoneStr[15];   // New field to store phone as string with country code
     char accountType[10];
     int accountNbr;
     double amount;
@@ -47,6 +49,7 @@ void removeExistingAccount(struct User u);
 void updateAccountInfo(struct User u);
 void transferOwnership(struct User u);
 void success(struct User u);
+int generateNewID();
 
 extern const char *USERS;
 #endif
