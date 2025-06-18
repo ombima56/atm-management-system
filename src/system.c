@@ -746,7 +746,7 @@ void checkAccountDetails(struct User u)
         {
             // If not the owner, check if we should allow viewing
             if (strcmp(userName, u.name) != 0) {
-                printf("\n✖ This account belongs to %s, not to you.\n", userName);
+                printf("\n✖ This account belongs to someone, Please confirm your details.\n");
                 fclose(fp);
                 success(u);
                 return;
