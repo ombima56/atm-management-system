@@ -15,15 +15,17 @@ cd atm-management-system
 ### 📄 `users.txt`
 
 id name password
+```sh
 0 Alice 1234password
 1 Michel password1234
-
+```
 ### `records.txt`
 id user_id username account_id creation_date country phone balance account_type
+```sh
 0 0 Alice 0 10/02/2020 german 986134231 11090830.00 current
 1 1 Michel 2 10/10/2021 portugal 914134431 1920.42 savings
 2 0 Alice 1 10/10/2000 finland 986134231 1234.21 savings
-
+```
 ## Usage
 Run the utility from the command line with the following steps:
 
