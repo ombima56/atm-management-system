@@ -39,6 +39,7 @@ void mainMenu(struct User u)
         transferOwnership(u);
         break;
     case 8:
+        printf("\nThank you for visiting our ATM system. Goodbye!\n");
         exit(1);
         break;
     default:
@@ -89,6 +90,7 @@ void initMenu(struct User *u)
             registerMenu(u->name, u->password);
             break;
         case 3:
+            printf("\nThank you for visiting our ATM system. Goodbye!\n");
             exit(1);
             break;
         default:
